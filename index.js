@@ -69,8 +69,8 @@ app.post('/upload', upload.array("image", 10), (req, res) => {
 //accese the photo through '/example/cat.jpg'
 app.use('/example', express.static('upload'));
 
-//accese the photo through '/exam/classification/cluster1/cat.jpg
-app.use('/exam', express.static('classification'));
+//accese the photo through '/classification/cluster1/cat.jpg
+app.use('/classificaion', express.static('classification'));
 
 //update upload folder and new release photo.json
 function exportImagesToJson(){
