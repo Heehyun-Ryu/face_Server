@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const upload_json = JSON.parse(fs.readFileSync("./photo.json", "utf-8"));
-const classificaion_json = JSON.parse(fs.readFileSync("./classification.json", "utf-8"));
+let upload_json = JSON.parse(fs.readFileSync("./photo.json", "utf-8"));
+let classificaion_json = JSON.parse(fs.readFileSync("./classification.json", "utf-8"));
 
 // const upload = multer({
 //     storage: multer.diskStorage({
@@ -69,19 +69,22 @@ app.post('/upload', upload.array("image", 10), (req, res) => {
 //accese the photo through '/example/cat.jpg'
 app.use('/example', express.static('upload'));
 
-//accese the photo through '/classification/cluster1/cat.jpg
-app.use('/classificaion', express.static('classification'));
+//accese the photo through '/classification/cluster1/cat1.jpg
+//EX) http://172.20.12.67:8080/classification/cluster1/cat2.jpg
+app.use('/classification', express.static('classification'));
 
 //update upload folder and new release photo.json
 function exportImagesToJson(){
     const uploadPath = path.join(__dirname, 'upload');
-    const pictures= []
-
+    const pictures= {}
+    const pictureList = []
     fs.readdirSync(uploadPath).forEach((pi) => {
         if(pi.endsWith('.jpg') || pi.endsWith('.png')){
-            pictures.push({filename: pi, path: `/upload/${pi}`});
+            pictureList.push({filename: pi, path: `/upload/${pi}`});
         }
     });
+
+    pictures['photo'] = pictureList;
 
     const jsonContent = JSON.stringify(pictures, null, 2);
     console.log(path.join(__dirname, 'photo.json'));
@@ -136,6 +139,8 @@ app.use(express.json());
 
 app.get("/point", (req, res) => {
     // res.send('fuck you');
+    // exportImagesToJson();
+    upload_json = JSON.parse(fs.readFileSync("./photo.json", "utf-8"));
     res.json(upload_json);
 });
 
