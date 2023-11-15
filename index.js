@@ -2,10 +2,69 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+var ip = require('ip');
+const os = require('os');
 
 const app = express();
+const port = 8080;
+const localIp = ip.address();
+const wifiAddress = getWifiAddress();
+
+// var ne = os.networkInterfaces()
+// console.log(ne);
+console.log(wifiAddress);
+
+// console.log(ip.address());
+
+if (!fs.existsSync("./upload")){
+    fs.mkdirSync("./upload");
+    console.log("create upload folder");
+}
+
+if(!fs.existsSync("./classification")){
+    fs.mkdirSync("./classification");
+    console.log("create classification folder");
+}
+
+if(!fs.existsSync("photo.json")){
+    var data = "";
+    fs.writeFileSync("photo.json", data);
+    console.log("create photo.json file");
+}
+
+if(!fs.existsSync("classification.json")){
+    var data = "";
+    fs.writeFileSync("classification.json", data);
+    console.log("create classification.json file");
+}
+
+
+
+exportImagesToJson();
+exportImagesToJson_classification();
+
 let upload_json = JSON.parse(fs.readFileSync("./photo.json", "utf-8"));
 let classificaion_json = JSON.parse(fs.readFileSync("./classification.json", "utf-8"));
+
+
+function getWifiAddress(){
+    const network = os.networkInterfaces();
+
+    for(const interfaceName in network){
+        if(interfaceName === 'Wi-Fi'){
+            const Info = network[interfaceName];
+
+            console.log(Info);
+
+            for(const Add of Info){
+                if(Add.family === 'IPv4' && !Add.internal){
+                    return Add.address;
+                }
+            }
+        }        
+    }
+    return null;
+}
 
 // const upload = multer({
 //     storage: multer.diskStorage({
@@ -60,6 +119,7 @@ const upload = multer({
 //     res.send('Image Uploaded');
 // });
 
+
 //upload images limit 10.
 app.post('/upload', upload.array("image", 10), (req, res) => {
     console.log(req.files);
@@ -97,7 +157,7 @@ function exportImagesToJson(){
 //update classification folder and new release classification.json
 function exportImagesToJson_classification(){
     const classification_path = path.join(__dirname, 'classification');
-    const clusters = [];
+    const clusters = {};
 
     fs.readdirSync(classification_path).forEach((folder) => {
         console.log(folder);
@@ -105,13 +165,14 @@ function exportImagesToJson_classification(){
 
         fs.readdirSync(path.join(__dirname, 'classification', folder)).forEach((img) => {
             // img = img.split(' ').join('');
-            console.log(img);
+            imgs = img.split('.');
+            console.log(imgs[0]);
             if(img.endsWith('.jpg') || img.endsWith('.png')){
-                imgList.push({name: img, path: `/classificaion/${folder}/${img}`});
+                imgList.push({name: img.split('.')[0], path: `http://${wifiAddress}:${port}/classification/${folder}/${img}`});
             }
             
         })
-        clusters.push({[folder]: imgList});
+        clusters[folder] = imgList;
     });
 
     console.log(clusters);
@@ -145,11 +206,12 @@ app.get("/point", (req, res) => {
 });
 
 app.get("/classify", (req, res) => {
+    classificaion_json = JSON.parse(fs.readFileSync("./classification.json", "utf-8"));
     res.json(classificaion_json);
 })
 
-app.listen(8080, () => {
-    console.log('listen on 8080');
+app.listen(port, () => {
+    console.log(`listen on ${port}`);
 })
 
 app.get('/', (req, res) => {
