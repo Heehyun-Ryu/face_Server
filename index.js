@@ -159,11 +159,11 @@ function exportImagesToJson_classification(){
     const classification_path = path.join(__dirname, 'classification');
     const clusters = {};
 
-    fs.readdirSync(classification_path).forEach((folder) => {
+    fs.readdirSync(classification_path).sort((a,b) => a.localeCompare(b, 'ko-KR-u-co-search', {sensitivity: 'base'})).forEach((folder) => {
         console.log(folder);
         imgList = [];
 
-        fs.readdirSync(path.join(__dirname, 'classification', folder)).forEach((img) => {
+        fs.readdirSync(path.join(__dirname, 'classification', folder)).sort((a,b) => a.localeCompare(b, 'ko-KR-u-co-search', {sensitivity: 'base'})).forEach((img) => {
             // img = img.split(' ').join('');
             imgs = img.split('.');
             console.log(imgs[0]);
