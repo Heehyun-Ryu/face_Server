@@ -40,7 +40,7 @@ if(!fs.existsSync("classification.json")){
 
 if(!fs.existsSync("register.json")){
     var data = [];
-    fs.writeFileSync("register.json", data);
+    fs.writeFileSync("register.json", JSON.stringify(data, null, 2), 'utf-8');
 }
 
 
@@ -141,6 +141,7 @@ app.post('/upload', upload.array("image", 10), (req, res) => {
     res.send('Files uploaded!');
 });
 
+
 app.post('/register', register.single('image'), (req, res) =>{
     const img = req.file;
     const Name = req.body.Name;
@@ -149,8 +150,28 @@ app.post('/register', register.single('image'), (req, res) =>{
 
     console.log(`Recive image1:`, req.file.path);
 
-    fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`));
+    const Newfilename = `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`;
+
+    let regJson = JSON.parse(fs.readFileSync("./register.json", "utf-8"));
+    console.log("regJson: ",regJson);
+
+    console.log(`upload\\${Newfilename}`);
+    // if(regJson.indexOf(Newfilename) === -1){
+    if(!regJson.includes(`upload\\${Newfilename}`)){
+        regJson.push(`upload\\${Newfilename}`);
+        fs.writeFileSync("register.json", JSON.stringify(regJson, null, 2), 'utf-8');
+    }
+    else{
+        console.log('Image already exists in register.json. Upload aborted.');
+        return res.status(400).send('Image already exists in register.json.');
+    }
+
+    // fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`));
+    fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, Newfilename));
     // fs.renameSync(req.file.path, 'upload\\'+req.file.filename);
+
+    
+
     console.log(`Recive image2:`, req.file.filename);
     console.log(`File:`, req.file);
     console.log(`Recive Name:`, Name);
