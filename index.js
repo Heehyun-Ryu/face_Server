@@ -38,6 +38,11 @@ if(!fs.existsSync("classification.json")){
     console.log("create classification.json file");
 }
 
+if(!fs.existsSync("register.json")){
+    var data = [];
+    fs.writeFileSync("register.json", data);
+}
+
 
 
 exportImagesToJson();
@@ -119,11 +124,40 @@ const upload = multer({
 //     res.send('Image Uploaded');
 // });
 
+const _Storage = multer.diskStorage({
+    destination: 'upload/',
+    filename: (req, file, cb) => {
+        cb(null, `register${path.extname(file.originalname)}`);
+    }
+});
+
+const register = multer({storage: _Storage});
+
+app.use(express.urlencoded({ extended: true }));
 
 //upload images limit 10.
 app.post('/upload', upload.array("image", 10), (req, res) => {
     console.log(req.files);
     res.send('Files uploaded!');
+});
+
+app.post('/register', register.single('image'), (req, res) =>{
+    const img = req.file;
+    const Name = req.body.Name;
+    const Age = req.body.Age;
+    const _Class = req.body._Class;
+
+    console.log(`Recive image1:`, req.file.path);
+
+    fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`));
+    // fs.renameSync(req.file.path, 'upload\\'+req.file.filename);
+    console.log(`Recive image2:`, req.file.filename);
+    console.log(`File:`, req.file);
+    console.log(`Recive Name:`, Name);
+    console.log(`Recive Age:`, Age);
+    console.log(`Recive Class:`, _Class);
+
+    res.send('Registration successful!');
 });
 
 //accese the photo through '/example/cat.jpg'
@@ -139,7 +173,7 @@ function exportImagesToJson(){
     const pictures= {}
     const pictureList = []
     fs.readdirSync(uploadPath).forEach((pi) => {
-        if(pi.endsWith('.jpg') || pi.endsWith('.png')){
+        if(pi.endsWith('.jpg') || pi.endsWith('.png') || pi.endsWith(`.JPG`) || pi.endsWith(`.PNG`)){
             pictureList.push({filename: pi, path: `/upload/${pi}`});
         }
     });
@@ -167,7 +201,7 @@ function exportImagesToJson_classification(){
             // img = img.split(' ').join('');
             imgs = img.split('.');
             console.log(imgs[0]);
-            if(img.endsWith('.jpg') || img.endsWith('.png')){
+            if(img.endsWith('.jpg') || img.endsWith('.png') || pi.endsWith(`.JPG`) || pi.endsWith(`.PNG`)){
                 imgList.push({name: img.split('.')[0], path: `http://${wifiAddress}:${port}/classification/${folder}/${img}`});
             }
             
@@ -182,12 +216,25 @@ function exportImagesToJson_classification(){
     console.log(jsonFile);
     fs.writeFileSync(path.join(__dirname, `classification.json`), jsonFile);
 }
+
 // exportImagesToJson_classification();
+
+let cnt = 0;
+let timeoutId;
+function debounce(func, delay){
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+        func();
+        cnt+=1;
+        console.log(cnt);
+    }, delay);
+}
 
 // detect folder update and notify
 fs.watch(`./classification`, {recursive: true}, (eventType, filename) => {
     console.log(`File ${filename} has been ${eventType}`);
-    exportImagesToJson_classification();
+    // exportImagesToJson_classification();
+    debounce(exportImagesToJson_classification, 1000);
 });
 
 //detect folder update and notify
