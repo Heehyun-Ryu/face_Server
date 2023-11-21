@@ -43,8 +43,6 @@ if(!fs.existsSync("register.json")){
     fs.writeFileSync("register.json", JSON.stringify(data, null, 2), 'utf-8');
 }
 
-
-
 exportImagesToJson();
 exportImagesToJson_classification();
 
@@ -150,7 +148,7 @@ app.post('/register', register.single('image'), (req, res) =>{
 
     console.log(`Recive image1:`, req.file.path);
 
-    const Newfilename = `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`;
+    const Newfilename = `${Name}_${Age}_${_Class}.jpg`;
 
     let regJson = JSON.parse(fs.readFileSync("./register.json", "utf-8"));
     console.log("regJson: ",regJson);
@@ -167,7 +165,7 @@ app.post('/register', register.single('image'), (req, res) =>{
     }
 
     // fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, `${Name}_${Age}_${_Class}${path.extname(req.file.originalname)}`));
-    fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, Newfilename));
+    fs.renameSync(req.file.path, req.file.path.replace(`register${path.extname(req.file.originalname)}`, `${Name}.jpg`));
     // fs.renameSync(req.file.path, 'upload\\'+req.file.filename);
 
     
