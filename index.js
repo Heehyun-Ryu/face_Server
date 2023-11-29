@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 var ip = require('ip');
 const os = require('os');
+const piexif = require('piexifjs');
+const { parentPort } = require('worker_threads');
 
 const app = express();
 const port = 8080;
@@ -12,7 +14,7 @@ const wifiAddress = getWifiAddress();
 
 // var ne = os.networkInterfaces()
 // console.log(ne);
-console.log(wifiAddress);
+// console.log(wifiAddress);
 
 // console.log(ip.address());
 
@@ -57,7 +59,7 @@ function getWifiAddress(){
         if(interfaceName === 'Wi-Fi'){
             const Info = network[interfaceName];
 
-            console.log(Info);
+            // console.log(Info);
 
             for(const Add of Info){
                 if(Add.family === 'IPv4' && !Add.internal){
@@ -87,11 +89,17 @@ function getWifiAddress(){
 //     })
 // });
 
+function removeExif(srcImgPath, destImgPath){
+    const imgData = fs.readFileSync(srcImgPath).toString('binary');
+    const newImgData = piexif.remove(imgData);
+    fs.writeFileSync(destImgPath, newImgData, 'binary');
+}
+
 const upload = multer({
     storage: multer.diskStorage({
         destination: 'upload/',
         filename: (req, file, cb) => {
-            console.log(file);
+            // console.log(file);
             cb(null, Date.now() + path.extname(file.originalname));
         }
     })
@@ -135,7 +143,13 @@ app.use(express.urlencoded({ extended: true }));
 
 //upload images limit 10.
 app.post('/upload', upload.array("image", 10), (req, res) => {
-    console.log(req.files);
+    const img = req.file;
+
+    console.log(req.files[0].filename);
+    const imgPate = path.join('upload', req.files[0].filename);
+
+    removeExif(imgPate, imgPate);
+
     res.send('Files uploaded!');
 });
 
@@ -213,13 +227,13 @@ function exportImagesToJson_classification(){
     const clusters = {};
 
     fs.readdirSync(classification_path).sort((a,b) => a.localeCompare(b, 'ko-KR-u-co-search', {sensitivity: 'base'})).forEach((folder) => {
-        console.log(folder);
+        // console.log(folder);
         imgList = [];
 
         fs.readdirSync(path.join(__dirname, 'classification', folder)).sort((a,b) => a.localeCompare(b, 'ko-KR-u-co-search', {sensitivity: 'base'})).forEach((img) => {
             // img = img.split(' ').join('');
             imgs = img.split('.');
-            console.log(imgs[0]);
+            // console.log(imgs[0]);
             if(img.endsWith('.jpg') || img.endsWith('.png') || pi.endsWith(`.JPG`) || pi.endsWith(`.PNG`)){
                 imgList.push({name: img.split('.')[0], path: `http://${wifiAddress}:${port}/classification/${folder}/${img}`});
             }
@@ -228,11 +242,11 @@ function exportImagesToJson_classification(){
         clusters[folder] = imgList;
     });
 
-    console.log(clusters);
+    // console.log(clusters);
     
     const jsonFile = JSON.stringify(clusters, null, 2);
-    console.log(path.join(__dirname, 'classification'));
-    console.log(jsonFile);
+    // console.log(path.join(__dirname, 'classification'));
+    // console.log(jsonFile);
     fs.writeFileSync(path.join(__dirname, `classification.json`), jsonFile);
 }
 
@@ -251,7 +265,7 @@ function debounce(func, delay){
 
 // detect folder update and notify
 fs.watch(`./classification`, {recursive: true}, (eventType, filename) => {
-    console.log(`File ${filename} has been ${eventType}`);
+    // console.log(`File ${filename} has been ${eventType}`);
     // exportImagesToJson_classification();
     debounce(exportImagesToJson_classification, 1000);
 });
